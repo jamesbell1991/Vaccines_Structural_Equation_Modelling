@@ -1,0 +1,502 @@
+---
+title: 'Vaccines SEM: Country Analysis'
+author: "James Bell"
+date: "Last edited `r format(Sys.time(), '%B %d %Y')`"
+output: 
+  word_document: 
+    toc: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# Packages ------------------------------------
+library(tidyverse)
+library(here)
+library(hablar)
+library(table1)
+library(lavaan)
+library(semPlot)
+library(collapse)
+library(semTable)
+library(sjPlot)
+library(psych)
+library(parameters)
+library(rmarkdown)
+library(flextable)
+
+
+
+# Functions ---------------------------------------------------------------
+
+DKrecode <- function(variable){
+  recode_factor(variable, 
+                "(DK)/(Refused)" = "Neither agree nor disagree")
+}
+
+numeric_code <- function(x){
+  case_when(
+    x == "Strongly disagree" ~ 1, 
+    x == "Slightly disagree" ~ 2, 
+    x == "Neither agree nor disagree" ~ 3, 
+    x == "Slightly agree" ~ 4, 
+    x == "Strongly agree" ~ 5
+  )
+}
+
+
+
+# Set-up ------------------------------------------------------------------
+
+# Load data (using output from Data Preparation script)
+Data_path <- here::here("Analysis_data") 
+data_an <- readRDS(Data_path)
+
+# Variable subsets
+scale_vars <-c("C1_5_C1", "C1_6_C1", "C1_7_C1", "C1_9_C1", "C1_10_C1", "C2_1_C2", "C2_2_C2", "C2_3_C2", "C2_4_C2", "C2_5_C2", "C2_6_C2", "C2_7_C2", "C2_8_C2", "B5_1_B5", "B5_2_B5", "B5_3_B5", "B5_4_B5", "B5_5_B5", "B5_6_B5", "B5_7_B5", "B5_8_B5", "B5_9_B5", "C1_1_C1", "C1_2_C1", "C1_8_C1", "C5_1_C5", "C5_2_C5", "C5_3_C5", "C5_4_C5", "E6_3_E6", "E6_7_E6", "E6_9_E6", "E7_1_E7", "E7_4_E7", "E7_5_E7", "E7_6_E7", "E7_7_E7", "E7_8_E7", "E7_9_E7", "E7_10_E7", "E8_1_E8", "E8_2_E8", "E8_3_E8", "E8_4_E8", "E9_1_E9", "E9_3_E9", "E9_4_E9", "E9_5_E9", "E14_3_E14", "E14_4_E14", "E14_6_E14", "E14_7_E14", "E14_8_E14")
+community_vars <-c("C1_5_C1", "C1_6_C1", "C1_7_C1", "C1_9_C1", "C1_10_C1", "C2_1_C2", "C2_2_C2", "C2_3_C2", "C2_4_C2", "C2_5_C2", "C2_6_C2", "C2_7_C2", "C2_8_C2")
+family_vars <- c("B5_1_B5", "B5_2_B5", "B5_3_B5", "B5_4_B5", "B5_5_B5", "B5_6_B5", "B5_7_B5", "B5_8_B5", "B5_9_B5", "C1_1_C1", "C1_2_C1", "C1_8_C1", "C5_1_C5", "C5_2_C5", "C5_3_C5", "C5_4_C5")
+vaccine_vars <- c("E6_3_E6", "E6_7_E6", "E6_9_E6", "E7_1_E7", "E7_4_E7", "E7_5_E7", "E7_6_E7", "E7_7_E7", "E7_8_E7", "E7_9_E7", "E7_10_E7", "E8_1_E8", "E8_2_E8", "E8_3_E8", "E8_4_E8", "E9_1_E9", "E9_3_E9", "E9_4_E9", "E9_5_E9", "E14_3_E14", "E14_4_E14", "E14_6_E14", "E14_7_E14", "E14_8_E14")
+
+# Country data sets
+data_NG <- data_an %>% 
+   filter(SS1 == "Nigeria")
+
+data_UG <- data_an %>% 
+   filter(SS1 == "Uganda")
+
+# Guinea
+data_GU <- data_an %>% 
+   filter(SS1 == "Guinea")
+
+```
+\newpage
+# Introduction 
+This supplementary document shows the results of the factor analysis and structural equation modelling for Nigeria, Uganda and Guinea separately.
+
+For each country, the factor analysis was repeated, which may have resulted in different factors from the main paper. Then, the measurement and structural models were run.
+
+\newpage
+
+# Nigeria 
+## Factor analysis and Measurement Model
+
+```{r NGfactor, include = FALSE}
+# Factor analysis  ---------------------------------------------------------------------
+# Recode DK/Refused to missing 
+
+data_NG[scale_vars] <-
+  lapply(data_NG[scale_vars], DKrecode)
+
+# Convert to numeric 
+data_NG[scale_vars] <- lapply(data_NG[scale_vars], numeric_code)
+
+# Family EFA
+#Select family variables
+data_fam_NG <- data_NG %>% 
+  select(all_of(family_vars))
+
+# Correlation matrix 
+fam_EFA_cor_NG <- cor(data_fam_NG, use = "pairwise.complete.obs")
+
+# Scree plot 
+scree(fam_EFA_cor_NG, factors = FALSE)
+
+# Try 5 factors 
+fam_EFA_5_NG <- fa(data_fam_NG, nfactors = 5)
+fam_EFA_5_NG$loadings
+
+# Try 6 factors 
+fam_EFA_6_NG <- fa(data_fam_NG, nfactors = 6)
+fam_EFA_6_NG$loadings
+
+# Possible factors here: 
+# Belief in religious protection: C5_1_C5 + C5_2_C5 + C5_3_C5 + C5_4_C5
+
+
+# Vaccine EFA
+#Select vaccine variables
+data_vacc_NG <- data_NG %>% 
+  select(all_of(vaccine_vars))
+
+# Correlation matrix 
+vacc_EFA_cor_NG <- cor(data_vacc_NG, use = "pairwise.complete.obs")
+
+# Scree plot 
+scree(vacc_EFA_cor_NG, factors = FALSE)
+
+# Try 6 factors 
+vacc_EFA_6_NG <- fa(data_vacc_NG, nfactors = 6)
+vacc_EFA_6_NG$loadings
+
+# Try 5 factors 
+vacc_EFA_5_NG <- fa(data_vacc_NG, nfactors = 5)
+vacc_EFA_5_NG$loadings
+
+# Try 4 factors 
+vacc_EFA_4_NG <- fa(data_vacc_NG, nfactors = 4)
+vacc_EFA_4_NG$loadings
+
+# Possible factors: 
+# Support for vaccination from authority figures: E14_3_E14 + E14_4_E14 + E14_6_E14 + E14_7_E14 + E14_8_E14
+# Bad service delivery experience: E7_1_E7 + E7_5_E7 +  E7_10_E7 + E8_3_E8
+# Visceral reaction: E6_3_E6 + E6_7_E6 + E6_9_E6
+
+## All possible factors: 
+# Support for vaccination from authority figures: E14_3_E14 + E14_4_E14 + E14_6_E14 + E14_7_E14 + E14_8_E14
+# Bad service delivery experience: E7_1_E7 + E7_5_E7 +  E7_10_E7 + E8_3_E8
+# Belief that vaccines are harmful: E6_3_E6 + E6_7_E6 + E6_9_E6
+# Belief in religious protection: C5_1_C5 + C5_2_C5 + C5_3_C5 + C5_4_C5
+```
+The factor analysis for Nigeria produced 4 factors: 
+
+```{r}
+table_NG <- data.frame(
+  Factor = c("Support for vaccination from others (A)", "Bad service delivery experience (B)", "Belief that vaccines are harmful (C)", "Belief in religious protection (D)"), 
+  Variables = c("My spouse / partner helped/ ensured that my child was vaccinated (E14_3_E14), My mother/ mother-in-law  helped/ ensured that my child was vaccinated (E14_4_E14), It is normal in this community to vaccinate your children (E14_6_E14), Religious leaders are supportive of vaccination (E14_7_E14), I trust that the government knows what is right for children  (E14_8_E14)", "The clinic or hospital or outreach site where the vaccination takes place is far away from where I live (E7_1_E7), It is not safe to travel to the clinic or hospital where the vaccination takes place (E7_5_E7), I am too busy to go to the clinic or hospital for vaccinations (E7_10_E7), The clinic or hospital is dirty (E8_3_E8)", "Having many vaccinations at once is hard for children to bear, (E6_3_E6), It is difficult for me to manage the side effects (fever, rash, pain) of vaccination (E6_7_E6), Vaccines are a way for global/western countries/organisations to control us (E6_9_E6)", "My religious faith protects me and my family from harm (C5_1_C5), My religious faith heals me and my family from illnesses (C5_2_C5), God is the only protection needed against harm (C5_3_C5), My religious faith guides decisions in my life (C5_4_C5)")
+)
+
+table_NG_flex <- flextable(table_NG)
+table_NG_flex <- width(table_NG_flex, width = 3)
+table_NG_flex
+```
+
+The measurement model for these factors is given below. 
+```{r}
+# Create the outcome variable 
+data_NG <- data_NG %>% mutate(outcome = SS11)
+data_NG$outcome <- fct_collapse(data_NG$outcome,
+                                 "Undervac" =  c("Not vaccinated", "Partially vaccinated"))
+
+
+model0_NG <- 
+  'A =~ E14_3_E14 + E14_4_E14 + E14_6_E14 + E14_7_E14 + E14_8_E14
+   B =~ E7_1_E7 + E7_5_E7 +  E7_10_E7 + E8_3_E8
+   C =~ E6_3_E6 + E6_7_E6 + E6_9_E6
+   D =~ C5_1_C5 + C5_2_C5 + C5_3_C5 + C5_4_C5'
+
+
+model0_NG.fit <- cfa(model = model0_NG, 
+                  data = data_NG)
+
+summary(model0_NG.fit, standardized = TRUE, fit.measures = T)
+
+fit_NG<- modificationindices(model0_NG.fit, sort = TRUE)
+```
+The measurement model showed an acceptable fit to the data: CFI = 0.94, TLI = 0.93, RMSEA = 0.04, SRMR = 0.04
+
+
+## Structural Model 
+The structural model for Nigeria is given below. 
+
+```{r}
+model1_NG <- 
+  'A =~ E14_3_E14 + E14_4_E14 + E14_6_E14 + E14_7_E14 + E14_8_E14
+   B =~ E7_1_E7 + E7_5_E7 +  E7_10_E7 + E8_3_E8
+   C =~ E6_3_E6 + E6_7_E6 + E6_9_E6
+   D =~ C5_1_C5 + C5_2_C5 + C5_3_C5 + C5_4_C5
+   outcome ~ A + B + C + D'
+
+
+model1_NG.fit <- cfa(model = model1_NG, 
+                  data = data_NG, 
+                  ordered = "outcome", 
+                  link = "probit")
+
+summary(model1_NG.fit, standardized = TRUE, fit.measures = T)
+
+model_parameters(model1_NG.fit, ci = 0.95, standardize = FALSE, component = c("regression"))
+model_parameters(model1_NG.fit, ci = 0.95, standardize = TRUE, component = c("regression"))
+```
+
+
+## Interpretation
+The structural model is shown to be a good fit to the data (CFI = 0.98, TLI = 0.97, RMSEA = 0.03, SRMR = 0.04).
+
+In the regression analysis, Support for vaccination from others (Factor A) was observed to lead to an increase in probability of vaccination (B- unstandardised coefficient = 0.51, $\beta$- standardised coefficient = 0.37, p<0.001). Bad service delivery experience (Factor B) was observed to lead to a decrease in probability of vaccination (B = -0.35, $\beta$ = -0.20, p=0.006). Neither Belief that vaccines are harmful (Factor C) nor Belief in religious protection (Factor D) appear to have a relationship with the vaccination outcome. (C: B = -0.046, $\beta$ = -0.013, p=0.85; D: B = -0.07, $\beta$ = -0.03, p=0.43)
+
+
+\newpage
+
+
+# Uganda 
+## Factor analysis and Measurement Model
+```{r UG_factor, include = FALSE}
+# Factor analysis  ---------------------------------------------------------------------
+# Recode DK/Refused to missing 
+
+data_UG[scale_vars] <-
+  lapply(data_UG[scale_vars], DKrecode)
+
+# Convert to numeric 
+data_UG[scale_vars] <- lapply(data_UG[scale_vars], numeric_code)
+
+# Family EFA
+#Select family variables
+data_fam_UG <- data_UG %>% 
+  select(all_of(family_vars))
+
+# Correlation matrix 
+fam_EFA_cor_UG <- cor(data_fam_UG, use = "pairwise.complete.obs")
+
+# Scree plot 
+scree(fam_EFA_cor_UG, factors = FALSE)
+
+# Try 5 factors 
+fam_EFA_5_UG <- fa(data_fam_UG, nfactors = 5)
+fam_EFA_5_UG$loadings
+
+# Try 6 factors 
+fam_EFA_6_UG <- fa(data_fam_UG, nfactors = 6)
+fam_EFA_6_UG$loadings
+
+# Possible factors here: 
+# Belief in religious protection: C5_1_C5 + C5_2_C5 + C5_3_C5 + C5_4_C5
+
+
+# Vaccine EFA
+#Select vaccine variables
+data_vacc_UG <- data_UG %>% 
+  select(all_of(vaccine_vars))
+
+# Correlation matrix 
+vacc_EFA_cor_UG <- cor(data_vacc_UG, use = "pairwise.complete.obs")
+
+# Scree plot 
+scree(vacc_EFA_cor_UG, factors = FALSE)
+
+# Try 6 factors 
+vacc_EFA_6_UG <- fa(data_vacc_UG, nfactors = 6)
+vacc_EFA_6_UG$loadings
+
+# Try 5 factors 
+vacc_EFA_5_UG <- fa(data_vacc_UG, nfactors = 5)
+vacc_EFA_5_UG$loadings
+
+# Try 4 factors 
+vacc_EFA_4_UG <- fa(data_vacc_UG, nfactors = 4)
+vacc_EFA_4_UG$loadings
+
+# Try 3 factors 
+vacc_EFA_3_UG <- fa(data_vacc_UG, nfactors = 3)
+vacc_EFA_3_UG$loadings
+
+
+## All possible factors: 
+# Belief in religious protection: C5_1_C5 + C5_2_C5 + C5_3_C5 + C5_4_C5
+# Vaccination is a norm and worth doing: E9_3_E9 + E14_6_E14 + E14_7_E14 + E14_8_E14
+# Vaccination is practically difficult: E7_6_E7 + E7_5_E7 + E7_8_E7 + E7_10_E7
+# Poor service delivery experience: E8_2_E8 + E8_3_E8 + E8_4_E8
+```
+The factor analysis for Uganda produced 4 factors: 
+
+```{r}
+table_UG <- data.frame(
+  Factor = c("Belief in religious protection (A)", "Vaccination is a norm and worth doing (B)", "Vaccination is practically difficult (C)", "Poor service delivery experience (D)"), 
+  Variables = c("My religious faith protects me and my family from harm (C5_1_C5), My religious faith heals me and my family from illnesses (C5_2_C5), God is the only protection needed against harm (C5_3_C5), My religious faith guides decisions in my life (C5_4_C5)", "I believe that vaccines are effective (E9_3_E9), It is normal in this community to vaccinate your children (E14_6_E14), Religious leaders are supportive of vaccination (E14_7_E14), I trust that the government knows what is right for children (E14_8_E14)", "I travel a lot so it’s hard to take my child to get vaccinated (E7_6_E7), It is not safe to travel to the clinic or hospital where the vaccination takes place (E7_5_E7), Vaccinations are not given if you miss the scheduled date  (E7_8_E7), I am too busy to go to the clinic or hospital for vaccinations (E7_10_E7)", "The staff in the hospital are rude to me (E8_2_E8), The clinic or hospital is dirty (E8_3_E8), The queues are too long at the clinic/ hospital where the vaccination takes place (E8_4_E8)")
+)
+
+
+table_UG_flex <- flextable(table_UG)
+table_UG_flex <- width(table_UG_flex, width = 3)
+table_UG_flex
+```
+The measurement model for these factors is given below. 
+
+```{r}
+# Create the outcome variable 
+data_UG <- data_UG %>% mutate(outcome = SS11)
+data_UG$outcome <- fct_collapse(data_UG$outcome,
+                                 "Undervac" =  c("Not vaccinated", "Partially vaccinated"))
+
+
+model0_UG <- 
+  'A =~ C5_1_C5 + C5_2_C5 + C5_3_C5 + C5_4_C5
+   B =~ E9_3_E9 + E14_6_E14 + E14_7_E14 + E14_8_E14
+   C =~ E7_6_E7 + E7_5_E7 + E7_8_E7 + E7_10_E7
+   D =~ E8_2_E8 + E8_3_E8 + E8_4_E8'
+
+
+
+model0_UG.fit <- cfa(model = model0_UG, 
+                  data = data_UG)
+
+summary(model0_UG.fit, standardized = TRUE, fit.measures = T)
+
+# fit_UG<- modificationindices(model0_UG.fit, sort = TRUE)
+```
+The measurement model showed an acceptable fit to the data: CFI = 0.96, TLI = 0.94, RMSEA = 0.03, SRMR = 0.04.
+
+
+## Structural Model 
+The structural model for Uganda is given below. 
+
+```{r}
+model1_UG <- 
+  'A =~ C5_1_C5 + C5_2_C5 + C5_3_C5 + C5_4_C5
+   B =~ E9_3_E9 + E14_6_E14 + E14_7_E14 + E14_8_E14
+   C =~ E7_6_E7 + E7_5_E7 + E7_8_E7 + E7_10_E7
+   D =~ E8_2_E8 + E8_3_E8 + E8_4_E8
+   outcome ~ A + B + C + D'
+
+
+
+model1_UG.fit <- cfa(model = model1_UG, 
+                  data = data_UG, 
+                  ordered = "outcome", 
+                  link = "probit")
+
+summary(model1_UG.fit, standardized = TRUE, fit.measures = T)
+
+model_parameters(model1_UG.fit, ci = 0.95, standardize = FALSE, component = c("regression"))
+model_parameters(model1_UG.fit, ci = 0.95, standardize = TRUE, component = c("regression"))
+```
+
+
+## Interpretation
+The structural model is shown to be a good fit to the data (CFI = 0.96, TLI = 0.95, RMSEA = 0.03, SRMR = 0.04). 
+
+In the regression analysis, only Vaccination is practically difficult (Factor C) was observed to have an impact on the vaccination outcome, making it less likely (B = -0.48, $\beta$ = -0.39, p=0<0.001). The other factors had no observed effect on the outcome (Belief in religious protection: B = 0.061, $\beta$ = 0.046, p=0.92; Vaccination is a norm and worth doing: B = -0.083, $\beta$ = -0.043, p=0.57 Poor service delivery experience: B = 0.052, $\beta$ = 0.049, p=0.72).
+
+\newpage
+
+
+# Guinea 
+
+```{r factor_GU, include = FALSE}
+# Recode DK/Refused to missing 
+
+data_GU[scale_vars] <-
+  lapply(data_GU[scale_vars], DKrecode)
+
+# Convert to numeric 
+data_GU[scale_vars] <- lapply(data_GU[scale_vars], numeric_code)
+
+# Family EFA
+#Select family variables
+data_fam_GU <- data_GU %>% 
+  select(all_of(family_vars))
+
+# Correlation matrix 
+fam_EFA_cor_GU <- cor(data_fam_GU, use = "pairwise.complete.obs")
+
+# Scree plot 
+scree(fam_EFA_cor_GU, factors = FALSE)
+
+# Try 5 factors 
+fam_EFA_5_GU <- fa(data_fam_GU, nfactors = 5)
+fam_EFA_5_GU$loadings
+
+# Try 6 factors 
+fam_EFA_6_GU <- fa(data_fam_GU, nfactors = 6)
+fam_EFA_6_GU$loadings
+
+# Possible factors here: 
+# Belief in religious protection: C5_1_C5 + C5_3_C5 + C5_4_C5
+
+
+# Vaccine EFA
+#Select vaccine variables
+data_vacc_GU <- data_GU %>% 
+  select(all_of(vaccine_vars))
+
+# Correlation matrix 
+vacc_EFA_cor_GU <- cor(data_vacc_GU, use = "pairwise.complete.obs")
+
+# Scree plot 
+scree(vacc_EFA_cor_GU, factors = FALSE)
+
+# Try 6 factors 
+vacc_EFA_6_GU <- fa(data_vacc_GU, nfactors = 6)
+vacc_EFA_6_GU$loadings
+
+# Try 5 factors 
+vacc_EFA_5_GU <- fa(data_vacc_GU, nfactors = 5)
+vacc_EFA_5_GU$loadings
+
+# Try 4 factors 
+vacc_EFA_4_GU <- fa(data_vacc_GU, nfactors = 4)
+vacc_EFA_4_GU$loadings
+
+# Possible factors: 
+# Support for vaccination from authority figures: E14_3_E14 + E14_4_E14 + E14_6_E14 + E14_7_E14 + E14_8_E14
+# Visceral reaction: E6_3_E6 + E6_7_E6 + E6_9_E6
+# Bad service delivery experience: E8_2_E8 + E8_3_E8 _ E8_4_E8 
+
+
+## All possible factors: 
+# Belief in religious protection: C5_1_C5 + C5_3_C5 + C5_4_C5
+# Support for vaccination from authority figures: E14_3_E14 + E14_4_E14 + E14_6_E14 + E14_7_E14 + E14_8_E14
+# Visceral reaction: E6_3_E6 + E6_7_E6 + E6_9_E6
+# Bad service delivery experience: E8_2_E8 + E8_3_E8 + E8_4_E8 
+```
+## Factor analysis and Measurement Model
+The factor analysis for Guinea produced 4 factors: 
+
+```{r}
+table_GU <- data.frame(
+  Factor = c("Belief in religious protection (A)", "Support for vaccination from others (B)", "Belief that vaccines are harmful (C)", "Poor service delivery experience (D)"), 
+  Variables = c("My religious faith protects me and my family from harm (C5_1_C5), God is the only protection needed against harm (C5_3_C5), My religious faith guides decisions in my life (C5_4_C5)", "My spouse / partner helped/ ensured that my child was vaccinated (E14_3_E14), My mother/ mother-in-law  helped/ ensured that my child was vaccinated (E14_4_E14), It is normal in this community to vaccinate your children (E14_6_E14), Religious leaders are supportive of vaccination (E14_7_E14), I trust that the government knows what is right for children  (E14_8_E14)", "Having many vaccinations at once is hard for children to bear (E6_3_E6), It is difficult for me to manage the side effects (fever, rash, pain) of vaccination (E6_7_E6), Vaccines are a way for global/western countries/organisations to control us (E6_9_E6)", "The staff in the hospital are rude to me (E8_2_E8), The clinic or hospital is dirty (E8_3_E8), The queues are too long at the clinic/ hospital where the vaccination takes place (E8_4_E8)")
+)
+
+
+table_GU_flex <- flextable(table_GU)
+table_GU_flex <- width(table_GU_flex, width = 3)
+table_GU_flex
+
+```
+
+The measurement model for these factors is given below. 
+
+```{r}
+# Create the outcome variable 
+data_GU <- data_GU %>% mutate(outcome = SS11)
+data_GU$outcome <- fct_collapse(data_GU$outcome,
+                                 "Undervac" =  c("Not vaccinated", "Partially vaccinated"))
+
+
+model0_GU <- 
+  'A =~ C5_1_C5 + C5_3_C5 + C5_4_C5
+   B =~ E14_3_E14 + E14_4_E14 + E14_6_E14 + E14_7_E14 + E14_8_E14
+   C =~ E6_3_E6 + E6_7_E6 + E6_9_E6
+   D =~ E8_2_E8 + E8_3_E8 + E8_4_E8 '
+
+
+model0_GU.fit <- cfa(model = model0_GU, 
+                  data = data_GU)
+
+summary(model0_GU.fit, standardized = TRUE, fit.measures = T)
+
+# fit_UG<- modificationindices(model0_UG.fit, sort = TRUE)
+```
+The measurement model showed an acceptable fit to the data: CFI = 0.92, TLI = 0.90, RMSEA = 0.05, SRMR = 0.04. 
+
+
+## Structural Model 
+The structural model for Guinea is given below. 
+
+```{r}
+model1_GU <- 
+  'A =~ C5_1_C5 + C5_3_C5 + C5_4_C5
+   B =~ E14_3_E14 + E14_4_E14 + E14_6_E14 + E14_7_E14 + E14_8_E14
+   C =~ E6_3_E6 + E6_7_E6 + E6_9_E6
+   D =~ E8_2_E8 + E8_3_E8 + E8_4_E8
+   outcome ~ A + B + C + D'
+
+
+model1_GU.fit <- cfa(model = model1_GU, 
+                  data = data_GU, 
+                  ordered = "outcome", 
+                  link = "probit")
+
+summary(model1_GU.fit, standardized = TRUE, fit.measures = T)
+
+model_parameters(model1_GU.fit, ci = 0.95, standardize = FALSE, component = c("regression"))
+model_parameters(model1_GU.fit, ci = 0.95, standardize = TRUE, component = c("regression"))
+```
+
+## Interpretation
+The structural model is shown to be a good fit to the data (CFI = 0.96, TLI = 0.95, RMSEA = 0.04, SRMR = 0.04).
+
+In the regression analysis, there was some evidence that Belief in religious protection (Factor A) is observed to increase the probability of full vaccination (B = 0.135, $\beta$ = -0.069, p= 0.08). Support for vaccination from others (Factor B) was observed to increase the probability of vaccination (B = 0.462, $\beta$ = 0.239, p<0.001). Belief that vaccines are harmful (Factor C) was observed to decrease the probability of vaccination (B = -0.267, $\beta$ = -0.213, p= 0.001) and Poor service delivery experience (Factor D) was observed to increase it (B = 0.130, $\beta$ = 0.123, p=0.05)
+
+

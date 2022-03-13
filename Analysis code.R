@@ -1,6 +1,6 @@
 # Vaccines_Structural_Equation_Modelling 
 # Code for the article 'A Structural Equation Modelling Approach to Understanding the Determinants of Childhood Vaccination in Nigeria, Uganda and Guinea'
-# This script reproduces the analysis in the main article and the supplementary materials  
+# This script reproduces the analysis in the main article  
 # March 2022
 
 # Packages ------------------------------------
@@ -262,58 +262,5 @@ modificationindices(model1.fit, sort = TRUE)
 # 95% CI
 model_parameters(model1.fit, ci = 0.95, standardize = FALSE, component = c("regression"))
 model_parameters(model1.fit, ci = 0.95, standardize = TRUE, component = c("regression"))
-
-
-
-# Country models ----------------------------------------------------------
-
-
-# Nigeria 
-data_NG <- data_an %>% 
-  filter(SS1 == "Nigeria")
-
-modelNG.fit <- cfa(model = model1, 
-                  data = data_NG, 
-                  ordered = "outcome", 
-                  link = "probit")
-
-summary(modelNG.fit, standardized = TRUE, fit.measures = T)
-
-
-
-
-# Uganda
-data_UG <- data_an %>% 
-  filter(SS1 == "Uganda")
-
-modelUG.fit <- cfa(model = model1, 
-                   data = data_UG, 
-                   ordered = "outcome", 
-                   link = "probit")
-
-summary(modelUG.fit, standardized = TRUE, fit.measures = T)
-
-
-
-
-# Guinea
-data_GU <- data_an %>% 
-  filter(SS1 == "Guinea")
-
-modelGU.fit <- cfa(model = model1, 
-                   data = data_GU, 
-                   ordered = "outcome", 
-                   link = "probit")
-
-summary(modelGU.fit, standardized = TRUE, fit.measures = T)
-
-
-
-
-
-
-
-
-
 
 
