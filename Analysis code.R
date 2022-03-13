@@ -1,6 +1,6 @@
 # Vaccines_Structural_Equation_Modelling 
 # Code for the article 'A Structural Equation Modelling Approach to Understanding the Determinants of Childhood Vaccination in Nigeria, Uganda and Guinea'
-# This script reproduces the analysis in the main article and the supplementary materials  
+# This script reproduces the analysis in the main article  
 # March 2022
 
 # Packages ------------------------------------
