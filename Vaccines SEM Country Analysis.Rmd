@@ -1,6 +1,7 @@
 ---
 title: 'Vaccines SEM: Country Analysis'
 author: "James Bell"
+<<<<<<< HEAD
 date: "Last edited `r format(Sys.time(), '%B %d %Y')`"
 output: 
   word_document: 
@@ -498,5 +499,37 @@ model_parameters(model1_GU.fit, ci = 0.95, standardize = TRUE, component = c("re
 The structural model is shown to be a good fit to the data (CFI = 0.96, TLI = 0.95, RMSEA = 0.04, SRMR = 0.04).
 
 In the regression analysis, there was some evidence that Belief in religious protection (Factor A) is observed to increase the probability of full vaccination (B = 0.135, $\beta$ = -0.069, p= 0.08). Support for vaccination from others (Factor B) was observed to increase the probability of vaccination (B = 0.462, $\beta$ = 0.239, p<0.001). Belief that vaccines are harmful (Factor C) was observed to decrease the probability of vaccination (B = -0.267, $\beta$ = -0.213, p= 0.001) and Poor service delivery experience (Factor D) was observed to increase it (B = 0.130, $\beta$ = 0.123, p=0.05)
+=======
+date: "13/03/2022"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+>>>>>>> 5c4d7ea1193a456693ab4b5ea63f3dd0a3fa6c82
 
 
